@@ -1,0 +1,17 @@
+string plotdir = "eps/";
+
+// Solution vector field
+plot([u1,u2], value=true, coef=0.5, cmm="{{ boundary_condition }} | Mesh="+Nm+" | u",
+     ps=plotdir+"{{ boundary_condition }}_u_"+Nm+".eps");
+
+// Error vector field
+plot([e1,e2], value=true, coef=10, cmm="{{ boundary_condition }} | Mesh="+Nm+" | error",
+     ps=plotdir+"{{ boundary_condition }}_error_"+Nm+".eps");
+
+// Rotation variable r
+plot(r, value=true, cmm="{{ boundary_condition }} | Mesh="+Nm+" | r (rot)",
+     ps=plotdir+"{{ boundary_condition }}_rot_"+Nm+".eps");
+
+// Divergence variable d
+plot(d, value=true, cmm="{{ boundary_condition }} | Mesh="+Nm+" | d (div)",
+     ps=plotdir+"{{ boundary_condition }}_div_"+Nm+".eps");

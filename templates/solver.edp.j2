@@ -1,0 +1,112 @@
+// ============================================================================
+// {{ problem_name }}
+// ============================================================================
+// Boundary condition: {{ boundary_condition }}
+// Finite element space: {{ mixed_fespace }} + {{ lagrange_fespace }}
+// Domain: {{ domain }}
+// ============================================================================
+
+{% if domain == 'Square' %}
+    {# 方形域：4条边界 #}
+    {% set boundary_labels = [1,2,3,4] %}
+{% elif domain == 'Circle' %}
+    {# 圆形域：1条边界 #}
+    {% set boundary_labels = [1] %}
+{% elif domain == 'Lshaped' %}
+    {# L形域：6条边界 #}
+    {% set boundary_labels = [1,2,3,4,5,6] %}
+{% endif %}
+
+load "Element_Mixte"
+{% if lagrange_fespace == 'P3' %}
+load "Element_P3"
+{% elif lagrange_fespace == 'P4' %}
+load "Element_P4"
+{% endif %}
+
+// ============================================================================
+// Command-line argument support
+// ============================================================================
+include "getARGV.idp"
+
+// ============================================================================
+// Exact solution and source terms
+// ============================================================================
+// Auto-generated from exact_solution_input (u1, u2) using SymPy symbolic differentiation
+// See: scripts/symbolic_derivatives.py
+
+{% for var, expr in exact_solution.items() %}
+func {{ var }} = {{ expr }};
+{% endfor %}
+
+// ============================================================================
+// Convergence study parameters
+// ============================================================================
+// Number of mesh refinements can be overridden from command line:
+//   FreeFem++ solver.edp -nref 8
+int NN = getARGV("-nref", 4);  // Default: 4 refinements (5 mesh levels: n=0,1,2,3,4)
+
+include "arrays.idp"  // Error and convergence rate arrays
+
+// ============================================================================
+// Main convergence loop
+// ============================================================================
+for(int n = 0; n < NN; n++) {
+    int Nm = 2^(n+2);  // Mesh size: 4x4, 8x8, 16x16, 32x32
+
+    include "mesh.idp"  // Mesh generation
+
+    // Finite element spaces (3-variable formulation: u, r, d)
+
+	// r,d: Numerical solutions for rot and div
+	// v,w: test functions
+	fespace Ph(Th, {{ lagrange_fespace }});
+    Ph r, v, d, w;
+
+	// [u1,u2]: Numerical solutions for vector u
+	// [g1,g2]: test functions [e1,e2]: Numerical solution error
+    fespace Vh(Th, {{ mixed_fespace }});
+    Vh [u1, u2], [g1, g2], [e1, e2];    
+
+    // Variational formulation (3-variable: u, r, d)
+    problem varisolve([u1,u2,r,d], [g1,g2,v,w]) =
+        
+		int2d(Th)(r*v)-int2d(Th)(u1*dy(v)-u2*dx(v))
+        {% if boundary_condition == 'Magnetic' %}
+        + int1d(Th,{{ boundary_labels|join(',') }})(v*(u1*N.y-u2*N.x))
+        {% endif %}
+		
+        + int2d(Th)(d*w)+int2d(Th)(u1*dx(w)+u2*dy(w))
+        {% if boundary_condition == 'Electric' %}
+        - int1d(Th,{{ boundary_labels|join(',') }})(w*(u1*N.x + u2*N.y))
+        {% endif %}
+		
+        + int2d(Th)(g1*dy(r)-g2*dx(r))
+        - int2d(Th)(g1*dx(d)+g2*dy(d))
+        - int2d(Th)(f1*g1+f2*g2)
+		
+        {% if boundary_condition == 'Electric' %}
+        + int1d(Th,{{ boundary_labels|join(',') }})(w*d)
+        {% elif boundary_condition == 'Magnetic' %}
+        + int1d(Th,{{ boundary_labels|join(',') }})(v*r)
+        {% endif %}
+        {% if boundary_condition == 'Dirichlet' %}
+        + on({{ boundary_labels|join(',') }}, u1=0, u2=0)
+        {% endif %};
+
+    // Solve
+    real start = clock();
+    varisolve;
+    real finish = clock();
+    time[n] = finish - start;
+
+    // Error analysis (computed in separate file for clarity)
+    include "errors.idp"
+
+	include "plot.idp"
+}
+
+// ============================================================================
+// Results output (convergence rates and data export)
+// ============================================================================
+include "output.idp"

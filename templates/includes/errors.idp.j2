@@ -1,0 +1,24 @@
+// ============================================================================
+// ERROR ANALYSIS (auto-generated include file)
+// ============================================================================
+// This file computes error norms for finite element convergence analysis.
+// It is automatically included in the main solver loop.
+// You typically don't need to modify this file.
+
+// Compute error vector
+[e1,e2] = [u1,u2] - [u1exact,u2exact];
+
+// Velocity errors
+H1u[n] = sqrt(int2d(Th)((dx(u1)-u1x)^2+(dy(u1)-u1y)^2
+    +(dx(u2)-u2x)^2+(dy(u2)-u2y)^2+(u1-u1exact)^2+(u2-u2exact)^2));
+L2u[n] = sqrt(int2d(Th)((u1-u1exact)^2+(u2-u2exact)^2));
+
+// Control error
+L2divu[n] = sqrt(int2d(Th)((dx(u1)-u1x+dy(u2)-u2y)^2));
+L2rotu[n] = sqrt(int2d(Th)((dx(u2)-u2x-dy(u1)+u1y)^2));
+
+// Discrete scalar value error
+L2r[n] = sqrt(int2d(Th)((rotu-r)^2));
+L2curlr[n] = sqrt(int2d(Th)((dy(r)-rotuy)^2+(-dx(r)+rotux)^2));
+L2d[n] = sqrt(int2d(Th)((divu-d)^2));
+L2gradd[n] = sqrt(int2d(Th)((dx(d)-divux)^2+(dy(d)-divuy)^2));

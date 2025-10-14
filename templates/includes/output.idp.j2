@@ -1,0 +1,85 @@
+// ============================================================================
+// RESULTS OUTPUT (auto-generated include file)
+// ============================================================================
+// Compute convergence rates
+for(int n=0; n<NN-1; n++) {
+    rH1u[n] = log(H1u[n]/H1u[n+1])/log(2.0);
+    rL2u[n] = log(L2u[n]/L2u[n+1])/log(2.0);
+    rL2divu[n] = log(L2divu[n]/L2divu[n+1])/log(2.0);
+    rL2rotu[n] = log(L2rotu[n]/L2rotu[n+1])/log(2.0);
+    rL2r[n] = log(L2r[n]/L2r[n+1])/log(2.0);
+    rL2curlr[n] = log(L2curlr[n]/L2curlr[n+1])/log(2.0);
+    rL2d[n] = log(L2d[n]/L2d[n+1])/log(2.0);
+    rL2gradd[n] = log(L2gradd[n]/L2gradd[n+1])/log(2.0);
+}
+
+// ============================================================================
+// Output 1: Machine-readable format (results.dat)
+// ============================================================================
+ofstream f("results.dat");
+f << "# Domain: {{ domain }}" << endl;
+f << "# Mesh  H1u  rate  L2u  rate  L2divu  rate  L2rotu  rate  L2r  rate  L2curlr  rate  L2d  rate  L2gradd  rate" << endl;
+
+for(int n = 0; n < NN; n++) {
+    real rH1 = (n > 0) ? rH1u[n-1] : 0.0;
+    real rL2 = (n > 0) ? rL2u[n-1] : 0.0;
+    real rDiv = (n > 0) ? rL2divu[n-1] : 0.0;
+    real rRot = (n > 0) ? rL2rotu[n-1] : 0.0;
+    real rR = (n > 0) ? rL2r[n-1] : 0.0;
+    real rCurl = (n > 0) ? rL2curlr[n-1] : 0.0;
+    real rD = (n > 0) ? rL2d[n-1] : 0.0;
+    real rGrad = (n > 0) ? rL2gradd[n-1] : 0.0;
+
+    f << n << " "
+      << H1u[n] << " " << rH1 << " "
+      << L2u[n] << " " << rL2 << " "
+      << L2divu[n] << " " << rDiv << " "
+      << L2rotu[n] << " " << rRot << " "
+      << L2r[n] << " " << rR << " "
+      << L2curlr[n] << " " << rCurl << " "
+      << L2d[n] << " " << rD << " "
+      << L2gradd[n] << " " << rGrad << endl;
+}
+
+// ============================================================================
+// Output 2: Human-readable format (summary.txt)
+// ============================================================================
+ofstream ftxt("summary.txt");
+ftxt << "========================================" << endl;
+ftxt << "Convergence Analysis Report" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Problem: {{ boundary_condition }}_{{ function_name }}_{{ domain }}" << endl;
+ftxt << "Finite Element: {{ mixed_fespace }} + {{ lagrange_fespace }}" << endl;
+ftxt << "Mesh refinements: " << NN << endl;
+ftxt << "========================================" << endl;
+ftxt << endl;
+
+{% set error_list = [
+    ('H1u', 'rH1u', 'H1 Error of u'),
+    ('L2u', 'rL2u', 'L2 Error of u'),
+    ('L2divu', 'rL2divu', 'L2 Error of div(u)'),
+    ('L2rotu', 'rL2rotu', 'L2 Error of rot(u)'),
+    ('L2r', 'rL2r', 'L2 Error of r'),
+    ('L2curlr', 'rL2curlr', 'L2 Error of curl(r)'),
+    ('L2d', 'rL2d', 'L2 Error of d'),
+    ('L2gradd', 'rL2gradd', 'L2 Error of grad(d)')
+] %}
+
+{% for error_var, rate_var, title in error_list %}
+// {{ title }}
+ftxt << "========================================" << endl;
+ftxt << "{{ title }}" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << {{ error_var }}[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << {{ rate_var }}[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+{% endfor %}

@@ -1,0 +1,22 @@
+// ============================================================================
+// MESH GENERATION (auto-generated include file)
+// ============================================================================
+// Mesh parameter Nm must be defined before including this file.
+
+{% if domain == 'Square' %}
+// Unit square domain (4 boundaries: labels 1,2,3,4)
+mesh Th = square(Nm, Nm);
+{% elif domain == 'Circle' %}
+// Circular domain (1 boundary: label 1)
+border circle(t=0,2*pi){x=cos(t); y=sin(t); label=1;}
+mesh Th = buildmesh(circle(Nm));
+{% elif domain == 'Lshaped' %}
+// L-shaped domain (6 boundaries: labels 1-6)
+border c1(t=0,1){x=2*t-1; y=-1; label=1;}
+border c2(t=0,1){x=1; y=t-1; label=2;}
+border c3(t=0,1){x=1-t; y=0; label=3;}
+border c4(t=0,1){x=0; y=t; label=4;}
+border c5(t=0,1){x=-t; y=1; label=5;}
+border c6(t=0,1){x=-1; y=1-2*t; label=6;}
+mesh Th = buildmesh(c1(Nm)+c2(Nm)+c3(Nm)+c4(Nm)+c5(Nm)+c6(Nm));
+{% endif %}

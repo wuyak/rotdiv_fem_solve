@@ -1,0 +1,13 @@
+// ============================================================================
+// ARRAY DECLARATIONS (auto-generated include file)
+// ============================================================================
+// Arrays to store errors, convergence rates, and timing data.
+// Must be declared before the main convergence loop.
+
+// Error arrays (size NN)
+real[int] H1u(NN), L2u(NN), L2divu(NN), L2rotu(NN);
+real[int] L2r(NN), L2curlr(NN), L2d(NN), L2gradd(NN), time(NN);
+
+// Convergence rate arrays (size NN-1)
+real[int] rH1u(NN-1), rL2u(NN-1), rL2divu(NN-1), rL2rotu(NN-1);
+real[int] rL2r(NN-1), rL2curlr(NN-1), rL2d(NN-1), rL2gradd(NN-1);

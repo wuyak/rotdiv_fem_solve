@@ -1,0 +1,311 @@
+// ============================================================================
+// Electric_Trigonometric_Square
+// ============================================================================
+// Boundary condition: Electric
+// Finite element space: BDM2 + P3
+// Domain: Square
+// ============================================================================
+
+
+load "Element_Mixte"
+load "Element_P3"
+
+// ============================================================================
+// Command-line argument support
+// ============================================================================
+include "getARGV.idp"
+
+// ============================================================================
+// Exact solution and source terms
+// ============================================================================
+// Auto-generated from exact_solution_input (u1, u2) using SymPy symbolic differentiation
+// See: scripts/symbolic_derivatives.py
+
+func u1exact = sin(pi*y)*cos(pi*x);
+func u2exact = 2*sin(pi*x)*cos(pi*y);
+func u1x = -pi*sin(pi*x)*sin(pi*y);
+func u1y = pi*cos(pi*x)*cos(pi*y);
+func u2x = 2*pi*cos(pi*x)*cos(pi*y);
+func u2y = -2*pi*sin(pi*x)*sin(pi*y);
+func divu = -3*pi*sin(pi*x)*sin(pi*y);
+func rotu = pi*cos(pi*x)*cos(pi*y);
+func divux = -3*pi^2*sin(pi*y)*cos(pi*x);
+func divuy = -3*pi^2*sin(pi*x)*cos(pi*y);
+func rotux = -pi^2*sin(pi*x)*cos(pi*y);
+func rotuy = -pi^2*sin(pi*y)*cos(pi*x);
+func f1 = 2*pi^2*sin(pi*y)*cos(pi*x);
+func f2 = 4*pi^2*sin(pi*x)*cos(pi*y);
+
+// ============================================================================
+// Convergence study parameters
+// ============================================================================
+// Number of mesh refinements can be overridden from command line:
+//   FreeFem++ solver.edp -nref 8
+int NN = getARGV("-nref", 4);  // Default: 4 refinements (5 mesh levels: n=0,1,2,3,4)
+
+real[int] H1u(NN), L2u(NN), L2divu(NN), L2rotu(NN);
+real[int] L2r(NN), L2curlr(NN), L2d(NN), L2gradd(NN), time(NN);
+
+// Convergence rate arrays (size NN-1)
+real[int] rH1u(NN-1), rL2u(NN-1), rL2divu(NN-1), rL2rotu(NN-1);
+real[int] rL2r(NN-1), rL2curlr(NN-1), rL2d(NN-1), rL2gradd(NN-1);
+
+
+// ============================================================================
+// Main convergence loop
+// ============================================================================
+for(int n = 0; n < NN; n++) {
+    int Nm = 2^(n+2);  // Mesh size: 4x4, 8x8, 16x16, 32x32
+
+    mesh Th = square(Nm, Nm);
+
+
+    // Finite element spaces (3-variable formulation: u, r, d)
+
+	// r,d: Numerical solutions for rot and div
+	// v,w: test functions
+	fespace Ph(Th, P3);
+    Ph r, v, d, w;
+
+	// [u1,u2]: Numerical solutions for vector u
+	// [g1,g2]: test functions [e1,e2]: Numerical solution error
+    fespace Vh(Th, BDM2);
+    Vh [u1, u2], [g1, g2], [e1, e2];    
+
+    // Variational formulation (3-variable: u, r, d)
+    problem varisolve([u1,u2,r,d], [g1,g2,v,w]) =
+        
+		int2d(Th)(r*v)-int2d(Th)(u1*dy(v)-u2*dx(v))
+		
+        + int2d(Th)(d*w)+int2d(Th)(u1*dx(w)+u2*dy(w))
+        - int1d(Th,1,2,3,4)(w*(u1*N.x + u2*N.y))
+		
+        + int2d(Th)(g1*dy(r)-g2*dx(r))
+        - int2d(Th)(g1*dx(d)+g2*dy(d))
+        - int2d(Th)(f1*g1+f2*g2)
+		
+        + int1d(Th,1,2,3,4)(w*d)
+;
+
+    // Solve
+    real start = clock();
+    varisolve;
+    real finish = clock();
+    time[n] = finish - start;
+    [e1,e2] = [u1,u2] - [u1exact,u2exact];
+
+// Velocity errors
+H1u[n] = sqrt(int2d(Th)((dx(u1)-u1x)^2+(dy(u1)-u1y)^2
+    +(dx(u2)-u2x)^2+(dy(u2)-u2y)^2+(u1-u1exact)^2+(u2-u2exact)^2));
+L2u[n] = sqrt(int2d(Th)((u1-u1exact)^2+(u2-u2exact)^2));
+
+// Control error
+L2divu[n] = sqrt(int2d(Th)((dx(u1)-u1x+dy(u2)-u2y)^2));
+L2rotu[n] = sqrt(int2d(Th)((dx(u2)-u2x-dy(u1)+u1y)^2));
+
+// Discrete scalar value error
+L2r[n] = sqrt(int2d(Th)((rotu-r)^2));
+L2curlr[n] = sqrt(int2d(Th)((dy(r)-rotuy)^2+(-dx(r)+rotux)^2));
+L2d[n] = sqrt(int2d(Th)((divu-d)^2));
+L2gradd[n] = sqrt(int2d(Th)((dx(d)-divux)^2+(dy(d)-divuy)^2));
+
+	string plotdir = "eps/";
+
+// Solution vector field
+plot([u1,u2], value=true, coef=0.5, cmm="Electric | Mesh="+Nm+" | u",
+     ps=plotdir+"Electric_u_"+Nm+".eps");
+
+// Error vector field
+plot([e1,e2], value=true, coef=10, cmm="Electric | Mesh="+Nm+" | error",
+     ps=plotdir+"Electric_error_"+Nm+".eps");
+
+// Rotation variable r
+plot(r, value=true, cmm="Electric | Mesh="+Nm+" | r (rot)",
+     ps=plotdir+"Electric_rot_"+Nm+".eps");
+
+// Divergence variable d
+plot(d, value=true, cmm="Electric | Mesh="+Nm+" | d (div)",
+     ps=plotdir+"Electric_div_"+Nm+".eps");
+
+}
+
+for(int n=0; n<NN-1; n++) {
+    rH1u[n] = log(H1u[n]/H1u[n+1])/log(2.0);
+    rL2u[n] = log(L2u[n]/L2u[n+1])/log(2.0);
+    rL2divu[n] = log(L2divu[n]/L2divu[n+1])/log(2.0);
+    rL2rotu[n] = log(L2rotu[n]/L2rotu[n+1])/log(2.0);
+    rL2r[n] = log(L2r[n]/L2r[n+1])/log(2.0);
+    rL2curlr[n] = log(L2curlr[n]/L2curlr[n+1])/log(2.0);
+    rL2d[n] = log(L2d[n]/L2d[n+1])/log(2.0);
+    rL2gradd[n] = log(L2gradd[n]/L2gradd[n+1])/log(2.0);
+}
+
+// ============================================================================
+// Output 1: Machine-readable format (results.dat)
+// ============================================================================
+ofstream f("results.dat");
+f << "# Domain: Square" << endl;
+f << "# Mesh  H1u  rate  L2u  rate  L2divu  rate  L2rotu  rate  L2r  rate  L2curlr  rate  L2d  rate  L2gradd  rate" << endl;
+
+for(int n = 0; n < NN; n++) {
+    real rH1 = (n > 0) ? rH1u[n-1] : 0.0;
+    real rL2 = (n > 0) ? rL2u[n-1] : 0.0;
+    real rDiv = (n > 0) ? rL2divu[n-1] : 0.0;
+    real rRot = (n > 0) ? rL2rotu[n-1] : 0.0;
+    real rR = (n > 0) ? rL2r[n-1] : 0.0;
+    real rCurl = (n > 0) ? rL2curlr[n-1] : 0.0;
+    real rD = (n > 0) ? rL2d[n-1] : 0.0;
+    real rGrad = (n > 0) ? rL2gradd[n-1] : 0.0;
+
+    f << n << " "
+      << H1u[n] << " " << rH1 << " "
+      << L2u[n] << " " << rL2 << " "
+      << L2divu[n] << " " << rDiv << " "
+      << L2rotu[n] << " " << rRot << " "
+      << L2r[n] << " " << rR << " "
+      << L2curlr[n] << " " << rCurl << " "
+      << L2d[n] << " " << rD << " "
+      << L2gradd[n] << " " << rGrad << endl;
+}
+
+// ============================================================================
+// Output 2: Human-readable format (summary.txt)
+// ============================================================================
+ofstream ftxt("summary.txt");
+ftxt << "========================================" << endl;
+ftxt << "Convergence Analysis Report" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Problem: Electric_Trigonometric_Square" << endl;
+ftxt << "Finite Element: BDM2 + P3" << endl;
+ftxt << "Mesh refinements: " << NN << endl;
+ftxt << "========================================" << endl;
+ftxt << endl;
+
+
+// H1 Error of u
+ftxt << "========================================" << endl;
+ftxt << "H1 Error of u" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << H1u[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rH1u[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of u
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of u" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2u[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2u[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of div(u)
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of div(u)" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2divu[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2divu[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of rot(u)
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of rot(u)" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2rotu[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2rotu[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of r
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of r" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2r[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2r[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of curl(r)
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of curl(r)" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2curlr[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2curlr[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of d
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of d" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2d[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2d[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
+
+// L2 Error of grad(d)
+ftxt << "========================================" << endl;
+ftxt << "L2 Error of grad(d)" << endl;
+ftxt << "========================================" << endl;
+ftxt << "Mesh    Error          Rate" << endl;
+ftxt << "----------------------------------------" << endl;
+for(int n = 0; n < NN; n++) {
+    ftxt << "  " << n << "     ";
+    ftxt.scientific << L2gradd[n] << "   ";
+    ftxt.fixed;
+    if(n > 0) ftxt << rL2gradd[n-1];
+    else ftxt << "-";
+    ftxt << endl;
+}
+ftxt << endl;
