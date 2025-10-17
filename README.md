@@ -1,50 +1,55 @@
-# 旋度-散度混合有限元求解器
+<p style="text-align: center;">
+    Curl-Div Mixed Finite Element Solver<br>
+    Automated FreeFEM++ Numerical Experiment System — Batch Solver Generation and Execution Framework
+</p>
 
-自动化 FreeFEM++ 数值实验系统 —— 批量求解器生成与执行框架
+<p style="text-align: center;">
+    English · [<a href="./README_zh_CN.md">中文</a>]
+</p>
 
 ---
 
-## 环境要求
+## 📋 Requirements
 
-### 必需软件
+### Required Software
 
-- **FreeFEM++ 4.0+** —— 有限元求解器
-- **Python 3.8+** —— 流程管理
+- **FreeFEM++ 4.0+** — Finite element solver
+- **Python 3.8+** — Workflow management
 
-### Python 依赖
+### Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**requirements.txt**：
+**requirements.txt**:
 ```txt
-jinja2>=3.1.0    # 模板引擎
-sympy>=1.12      # 符号计算
+jinja2>=3.1.0    # Template engine
+sympy>=1.12      # Symbolic computation
 ```
 
-### 可选软件
+### Optional Software
 
-- **Ghostscript** —— EPS → PNG/PDF 图像格式转换
+- **Ghostscript** — EPS → PNG/PDF image format conversion
 
 ---
 
-## 快速开始
+## 🚀 Quick Start
 
 ```bash
-python pipeline.py    # 生成 → 求解 → 转换
+python pipeline.py    # Generate → Solve → Convert
 ```
 
-> 图像转换步骤需要 Ghostscript。若未安装，可执行：
+> 💡 Image conversion requires Ghostscript. If not installed, run:
 
 ```bash
-python pipeline.py --step solve    # 生成 → 求解
+python pipeline.py --step solve    # Generate → Solve
 ```
 
-**执行示例**：
+**Execution Example**:
 ```text
-批量生成 24 个 FreeFEM++ 脚本
-使用 4 个并行任务
+Batch generating 24 FreeFEM++ scripts
+Using 4 parallel tasks
 [1/24] [OK] Dirichlet_Trig_Square/BDM1_P2
 ...
 [24/24] [OK] Magnetic_Trig_Lshaped/BDM2Ortho_P3
@@ -57,110 +62,110 @@ Summary: 24/24 succeeded
 
 ---
 
-## 项目定位
+## 📍 Project Overview
 
-### FreeFEM++ 的核心功能
+### FreeFEM++ Core Functionality
 
-FreeFEM++ 在二维混合有限元求解方面具有成熟的网格生成能力和丰富的函数空间支持，可以稳定高效地处理复杂的偏微分方程组。负责有限元离散化、线性系统求解和数值结果输出。
+FreeFEM++ excels in 2D mixed finite element solving with mature mesh generation capabilities and rich function space support, efficiently handling complex PDE systems. It handles finite element discretization, linear system solving, and numerical result output.
 
-### 数值实验的其他环节
+### Other Aspects of Numerical Experiments
 
-进行大规模数值实验时，除了求解器本身，还需要：
+Large-scale numerical experiments require more than just the solver:
 
-1. **符号计算** —— 从给定的精确解推导偏导数、散度、旋度和源项表达式，用于误差验证
-2. **批量代码生成** —— 针对多参数组合（边界条件 × 计算域 × 有限元空间）自动生成求解器脚本
-3. **图像格式转换** —— 将 FreeFEM++ 输出的 EPS 格式转换为 PNG 格式
+1. **Symbolic computation** — Derive partial derivatives, divergence, curl, and source terms from exact solutions for error verification
+2. **Batch code generation** — Automatically generate solver scripts for parameter combinations (boundary conditions × domains × finite element spaces)
+3. **Image format conversion** — Convert FreeFEM++ EPS output to PNG format
 
-### 本项目的作用
+### Purpose of This Project
 
-本项目为 FreeFEM++ 补充前处理和后处理功能：
+This project provides pre-processing and post-processing for FreeFEM++:
 
-**工作流程**：
-1. **SymPy 符号推导** —— 给定精确解，自动推导偏导数、散度、旋度和源项
-2. **Jinja2 模板引擎** —— 将配置参数注入 FreeFEM++ 脚本模板，批量生成求解器
-3. **Python 流程管理** —— 协调生成、求解和数值结果存储，支持多核并行
-4. **Ghostscript 图像转换** —— 批量转换 EPS 图像为 PNG 格式
+**Workflow**:
+1. **SymPy symbolic derivation** — Given exact solutions, automatically derive derivatives, divergence, curl, and source terms
+2. **Jinja2 template engine** — Inject configuration parameters into FreeFEM++ script templates for batch solver generation
+3. **Python workflow management** — Coordinate generation, solving, and result storage with multi-core parallelism
+4. **Ghostscript image conversion** — Batch convert EPS images to PNG format
 
-**拓展实验**：新增实验仅需在函数库中定义测试函数配置，系统自动完成脚本生成、求解和结果分析全流程
+**Experiment Extension**: Adding new experiments only requires defining test function configurations in the function library; the system automatically handles script generation, solving, and result analysis
 
 ---
 
-## 项目结构
+## 📁 Project Structure
 
 ```
 rot_div_refactor/
-├── pipeline.py                       # 主入口，协调三个执行阶段
-├── requirements.txt                  # Python 依赖清单
-├── scripts/                          # Python 模块
-│   ├── batch_generate.py             # 批量生成求解器脚本
-│   ├── run_freefem.py                # FreeFEM++ 并行求解
-│   ├── convert_plots.py              # Ghostscript 图像转换
-│   ├── template_generator.py         # Jinja2 模板渲染引擎
-│   ├── symbolic_derivatives.py       # SymPy 符号计算
-│   ├── function_library.py           # 测试函数配置库
-│   └── parallel_runner.py            # 并行框架
-├── templates/                        # Jinja2 模板
-│   ├── solver.edp.j2                 # FreeFEM++ 主求解器模板
-│   └── includes/                     # 子模板（网格、误差、输出、绘图）
+├── pipeline.py                       # Main entry, coordinates three execution stages
+├── requirements.txt                  # Python dependency list
+├── scripts/                          # Python modules
+│   ├── batch_generate.py             # Batch solver script generation
+│   ├── run_freefem.py                # FreeFEM++ parallel solving
+│   ├── convert_plots.py              # Ghostscript image conversion
+│   ├── template_generator.py         # Jinja2 template rendering engine
+│   ├── symbolic_derivatives.py       # SymPy symbolic computation
+│   ├── function_library.py           # Test function configuration library
+│   └── parallel_runner.py            # Parallel framework
+├── templates/                        # Jinja2 templates
+│   ├── solver.edp.j2                 # FreeFEM++ main solver template
+│   └── includes/                     # Sub-templates (mesh, error, output, plot)
 │       ├── arrays.idp.j2
 │       ├── mesh.idp.j2
 │       ├── errors.idp.j2
 │       ├── output.idp.j2
 │       └── plot.idp.j2
-└── output/                           # 输出目录
+└── output/                           # Output directory
 ```
 
-**核心文件说明**：
-- `function_library.py` —— 测试函数配置库（新增测试函数）
-- `batch_generate.py` —— FreeFEM++ 脚本生成器
-- `pipeline.py` —— 主入口和流程控制
-- `templates/solver.edp.j2` —— FreeFEM++ 求解脚本主模版
-- `templates/includes/*.idp.j2` —— 子模板（网格生成、误差计算、结果输出、图像绘制）
+**Core File Descriptions**:
+- `function_library.py` — Test function configuration library (add new test functions)
+- `batch_generate.py` — FreeFEM++ script generator
+- `pipeline.py` — Main entry and workflow control
+- `templates/solver.edp.j2` — FreeFEM++ solver script main template
+- `templates/includes/*.idp.j2` — Sub-templates (mesh generation, error calculation, result output, plotting)
 
 ---
 
-## 使用方法
+## 💻 Usage
 
-### 执行完整流程
-
-```bash
-python pipeline.py                  # 生成 + 求解 + 转换
-python pipeline.py --step generate  # 仅生成脚本
-python pipeline.py --step solve     # 生成 + 求解（不转换图像）
-```
-
-### 筛选配置
+### Execute Complete Workflow
 
 ```bash
-python pipeline.py --filter Dirichlet_Trig_Square    # 组合筛选
-python pipeline.py --filter BDM2                     # 所有 BDM2 空间
+python pipeline.py                  # Generate + Solve + Convert
+python pipeline.py --step generate  # Generate scripts only
+python pipeline.py --step solve     # Generate + Solve (no image conversion)
 ```
 
-### 输出控制
+### Filter Configurations
 
 ```bash
-python pipeline.py --output workspace    # 指定输出目录
-python pipeline.py --dpi 300             # 高分辨率图像
+python pipeline.py --filter Dirichlet_Trig_Square    # Combination filter
+python pipeline.py --filter BDM2                     # All BDM2 spaces
 ```
 
-### 输出结构
+### Output Control
+
+```bash
+python pipeline.py --output workspace    # Specify output directory
+python pipeline.py --dpi 300             # High-resolution images
+```
+
+### Output Structure
 
 ```
 output/
 └── {BoundaryCondition}_{Function}_{Domain}/
     └── {FESpace}_{LagrangeSpace}/
-        ├── solver.edp           # FreeFEM++ 求解器
-        ├── results.dat          # 数值解数据
-        ├── summary.txt          # 收敛率报告
+        ├── solver.edp           # FreeFEM++ solver
+        ├── results.dat          # Numerical solution data
+        ├── summary.txt          # Convergence rate report
         └── eps/
-            ├── *.eps            # 原始图像
+            ├── *.eps            # Original images
             └── png/
-                └── *.png        # 转换后图像
+                └── *.png        # Converted images
 ```
 
-### 输出示例
+### Output Example
 
-**收敛率分析报告** (`summary.txt`)：
+**Convergence Rate Analysis Report** (`summary.txt`):
 ```
 ========================================
 Convergence Analysis Report
@@ -183,11 +188,11 @@ Mesh    Error          Rate
 
 ---
 
-## 扩展
+## 🔧 Extensions
 
-### 添加测试函数
+### Add Test Functions
 
-编辑 `scripts/function_library.py`：
+Edit `scripts/function_library.py`:
 
 ```python
 FUNCTION_LIBRARY = {
@@ -201,29 +206,31 @@ FUNCTION_LIBRARY = {
 }
 ```
 
-然后运行：
+Then run:
 ```bash
 python pipeline.py --filter MyFunction
 ```
 
-### 添加有限元空间
+### Add Finite Element Spaces
 
-编辑 `scripts/batch_generate.py` 中的 `FESPACE_COMBINATIONS`：
+Edit `FESPACE_COMBINATIONS` in `scripts/batch_generate.py`:
 
 ```python
 FESPACE_COMBINATIONS = {
     'Dirichlet': [
         ('BDM1', 'P2'),
         ('BDM2', 'P3'),
-        ('RT2', 'P2'),    # 新增 Raviart-Thomas 空间
+        ('RT2', 'P2'),    # Add Raviart-Thomas space
     ],
 }
 ```
 
-### 自定义网格细化
+### Custom Mesh Refinement
 
-修改生成的 `solver.edp` 文件或传递 FreeFEM++ 参数：
+Modify the generated `solver.edp` file or pass FreeFEM++ parameters:
 
 ```bash
-FreeFem++ solver.edp -nref 5    # 5 次自适应细化
+FreeFem++ solver.edp -nref 5    # 5 adaptive refinements
 ```
+
+---
